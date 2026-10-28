@@ -1,0 +1,302 @@
+<title>NBA Player Profiles</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: builder rail (players, comparison pool, stat picker) beside the radar and its stat table. Same tokens as the Power Board. */
+:root {
+  --bg: #f3f5f8; --panel: #ffffff; --ink: #141b2a; --muted: #5b6577; --line: #dde2ea; --grid: #e9edf3;
+  --accent: #e0601a; --accent-soft: #fbe6da; --b: #2563c9; --b-soft: #dde8fa; --dim: #c3cad6;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "Public Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f141d; --panel: #171e2a; --ink: #e8ecf3; --muted: #97a1b3; --line: #2a3344; --grid: #222a38;
+  --accent: #f2793a; --accent-soft: #3a2518; --b: #6ea1f5; --b-soft: #1c2a44; --dim: #3b4558; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f141d; --panel: #171e2a; --ink: #e8ecf3; --muted: #97a1b3; --line: #2a3344; --grid: #222a38;
+  --accent: #f2793a; --accent-soft: #3a2518; --b: #6ea1f5; --b-soft: #1c2a44; --dim: #3b4558; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 24px; }
+nav { display: flex; gap: 18px; font: 600 13px var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+nav a { color: var(--muted); text-decoration: none; padding-bottom: 3px; border-bottom: 2px solid transparent; }
+nav a:hover { color: var(--ink); }
+nav a[aria-current="page"] { color: var(--ink); border-color: var(--accent); }
+h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: .01em; margin: 0; text-wrap: balance; line-height: 1.05; text-transform: uppercase; }
+h1 { font-size: clamp(38px, 6vw, 60px); }
+h1 span { color: var(--accent); }
+h2 { font-size: 22px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.lede { max-width: 68ch; color: var(--muted); margin: 8px 0 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; min-width: 0; }
+.grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+.rail { display: grid; gap: 18px; }
+.field { display: grid; gap: 6px; }
+.field > label, .field > .lbl { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.row { display: flex; gap: 6px; }
+input[type=text], select { font: 14px var(--body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; width: 100%; min-width: 0; box-sizing: border-box; }
+input[type=text]:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.clear { font: 600 12px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 4px; padding: 0 10px; cursor: pointer; }
+.hint { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.err { font-size: 12.5px; color: #c0262d; }
+.rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 600 12.5px var(--body); border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+.chip:hover { border-color: var(--accent); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip:disabled { opacity: .4; cursor: not-allowed; }
+.group-name { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin: 4px 0 2px; }
+.count { font: 500 12px var(--mono); color: var(--accent); margin-left: auto; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.card { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 2px; border-top: 4px solid var(--c); }
+.card .nm { font: 700 24px var(--display); text-transform: uppercase; line-height: 1.1; }
+.card .meta { font: 12.5px var(--mono); color: var(--muted); }
+.card .score { font: 13px var(--body); margin-top: 4px; }
+.card .score b { font: 700 20px var(--display); color: var(--c); margin-right: 4px; }
+.radar-wrap { display: grid; justify-items: center; }
+svg.radar { width: 100%; max-width: 620px; height: auto; display: block; overflow: visible; }
+svg.radar text { font: 600 15px var(--body); fill: var(--ink); }
+svg.radar text.ring { font: 12px var(--mono); fill: var(--muted); font-weight: 400; }
+svg.radar text.val { font: 500 13px var(--mono); fill: var(--muted); }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+th { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; font-family: var(--mono); font-size: 13px; }
+td:first-child { font-family: var(--body); font-weight: 600; }
+td small { color: var(--muted); font-weight: 400; }
+.pbar { display: inline-block; width: 70px; height: 8px; background: var(--grid); border-radius: 2px; vertical-align: middle; margin-left: 8px; position: relative; overflow: hidden; }
+.pbar i { position: absolute; inset: 0 auto 0 0; background: var(--c); }
+.method { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.method h3 { font: 700 18px var(--display); text-transform: uppercase; margin: 0 0 6px; letter-spacing: .02em; }
+.method p { color: var(--muted); font-size: 14px; margin: 0 0 8px; max-width: 65ch; }
+code { font-family: var(--mono); font-size: 12.5px; background: var(--bg); padding: 1px 4px; border-radius: 3px; }
+.tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); font: 12px/1.4 var(--mono); padding: 7px 9px; border-radius: 4px; max-width: 260px; z-index: 5; }
+</style>
+
+<div class="wrap">
+  <nav aria-label="Dashboard pages"><a href="index.html">Power rankings</a><a href="players.html" aria-current="page">Player profiles</a></nav>
+  <header>
+    <div class="eyebrow">SBIN Analytics · Example dashboard · 2025–26 regular season</div>
+    <h1>Player <span>Profiles</span></h1>
+    <p class="lede">Pick a player and any 3 to 10 stats. Each stat becomes one corner of the shape, placed by the player's percentile against the comparison group: the further from the center, the better. Add a second player to compare their shapes.</p>
+  </header>
+
+  <div class="grid">
+    <aside class="panel rail" aria-label="Profile builder">
+      <div class="field">
+        <label for="pa"><span class="swatch" style="background:var(--accent)"></span>Player</label>
+        <input type="text" id="pa" list="plist" autocomplete="off" placeholder="Search by name">
+        <div class="err" id="pa-err" hidden></div>
+      </div>
+      <div class="field">
+        <label for="pb"><span class="swatch" style="background:var(--b)"></span>Compare with (optional)</label>
+        <div class="row"><input type="text" id="pb" list="plist" autocomplete="off" placeholder="Search by name"><button class="clear" id="pb-clear" type="button">Clear</button></div>
+        <div class="err" id="pb-err" hidden></div>
+      </div>
+      <datalist id="plist"></datalist>
+      <hr class="rule">
+      <div class="field">
+        <label for="pool">Compare against</label>
+        <select id="pool">
+          <option value="all">All players</option>
+          <option value="pos">Same position group</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="minmp">Minimum minutes played</label>
+        <select id="minmp"><option>250</option><option selected>500</option><option>1000</option><option>1500</option></select>
+        <div class="hint" id="pool-note"></div>
+      </div>
+      <hr class="rule">
+      <div class="field">
+        <div class="lbl">Templates</div>
+        <div class="chips" id="presets"></div>
+      </div>
+      <div class="field">
+        <div class="lbl">Stats <span class="count" id="count"></span></div>
+        <div id="picker"></div>
+      </div>
+    </aside>
+
+    <div style="display:grid;gap:20px;min-width:0">
+      <div class="cards" id="cards"></div>
+      <div class="panel radar-wrap"><svg class="radar" id="radar" viewBox="0 0 640 560" role="img" aria-label="Radar chart of player percentiles"></svg></div>
+      <div class="panel table-wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+    </div>
+  </div>
+
+  <section class="panel">
+    <h2 style="margin-bottom:14px">Methodology</h2>
+    <div class="method">
+      <div><h3>Percentiles</h3><p>A percentile is the share of the comparison group a player beats on that stat: 90 means better than 90% of them, and ties count as half. For stats where lower is better (turnovers, defensive rating) the scale is flipped, so the outside edge always means good.</p></div>
+      <div><h3>Comparison group</h3><p>Players at or above the minutes cutoff, either league-wide or within the same position group: guards (PG, SG), forwards (SF, PF) or centers (C). A player below the cutoff can still be profiled against the group.</p></div>
+      <div><h3>Volume cutoffs</h3><p>Shooting percentages need enough attempts to mean something: 3P% needs 82 attempts (one per game) and FT% needs 50. Players below the cutoff show <code>n/a</code> and sit at the center for that stat.</p></div>
+      <div><h3>Per game vs. per 100</h3><p>Per-game numbers reward playing time. Per-100-possession and percentage stats (AST%, TRB%, BLK%) measure production rate, which is fairer to bench players and slow-paced teams. Data comes from Basketball-Reference, with season totals used for traded players.</p></div>
+    </div>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+/*DATA*/
+</script>
+<script>
+(() => {
+// key, label, short label for the chart, format, lowerIsBetter, volume cutoff [totals key, min]
+const STATS = [
+  ['Scoring', [
+    ['pts_per_g', 'Points per game', 'PTS/G', 1], ['pts_per_poss', 'Points per 100 poss', 'PTS/100', 1],
+    ['usg_pct', 'Usage rate', 'USG%', 1], ['fta_per_fga_pct', 'Free throw rate', 'FT RATE', 3]]],
+  ['Shooting', [
+    ['ts_pct', 'True shooting %', 'TS%', 'pct'], ['efg_pct', 'Effective FG %', 'eFG%', 'pct'], ['fg_pct', 'Field goal %', 'FG%', 'pct'],
+    ['fg3_pct', '3-point %', '3P%', 'pct', 0, ['fg3a_tot', 82]], ['ft_pct', 'Free throw %', 'FT%', 'pct', 0, ['fta_tot', 50]],
+    ['fg3a_per_poss', '3PA per 100 poss', '3PA/100', 1], ['fg3a_per_fga_pct', '3-point attempt rate', '3PA RATE', 3]]],
+  ['Playmaking', [
+    ['ast_per_g', 'Assists per game', 'AST/G', 1], ['ast_per_poss', 'Assists per 100 poss', 'AST/100', 1], ['ast_pct', 'Assist %', 'AST%', 1],
+    ['tov_per_poss', 'Turnovers per 100 poss', 'TOV/100', 1, 1], ['tov_pct', 'Turnover %', 'TOV%', 1, 1]]],
+  ['Rebounding', [
+    ['trb_per_g', 'Rebounds per game', 'REB/G', 1], ['trb_per_poss', 'Rebounds per 100 poss', 'REB/100', 1],
+    ['orb_pct', 'Offensive rebound %', 'ORB%', 1], ['drb_pct', 'Defensive rebound %', 'DRB%', 1], ['trb_pct', 'Total rebound %', 'TRB%', 1]]],
+  ['Defense', [
+    ['stl_per_g', 'Steals per game', 'STL/G', 1], ['blk_per_g', 'Blocks per game', 'BLK/G', 1], ['stl_pct', 'Steal %', 'STL%', 1],
+    ['blk_pct', 'Block %', 'BLK%', 1], ['dbpm', 'Defensive box plus/minus', 'DBPM', 's1'], ['def_rtg', 'Defensive rating', 'DRTG', 0, 1]]],
+  ['Impact', [
+    ['bpm', 'Box plus/minus', 'BPM', 's1'], ['obpm', 'Offensive box plus/minus', 'OBPM', 's1'], ['per', 'Player efficiency rating', 'PER', 1],
+    ['ws', 'Win shares', 'WS', 1], ['ws_per_48', 'Win shares per 48', 'WS/48', 3], ['vorp', 'Value over replacement', 'VORP', 1],
+    ['off_rtg', 'Offensive rating', 'ORTG', 0], ['mp_per_g', 'Minutes per game', 'MIN/G', 1]]],
+];
+const DEF = {}; STATS.forEach(([g, list]) => list.forEach(([k, label, short, fmt, lower, vol]) => DEF[k] = { k, g, label, short, fmt, lower: !!lower, vol }));
+const PRESETS = {
+  'Box score': ['pts_per_g', 'trb_per_g', 'ast_per_g', 'stl_per_g', 'blk_per_g', 'ts_pct'],
+  'Scorer': ['pts_per_poss', 'ts_pct', 'usg_pct', 'fta_per_fga_pct', 'fg3_pct', 'tov_pct'],
+  'Playmaker': ['ast_pct', 'ast_per_poss', 'tov_pct', 'usg_pct', 'ts_pct'],
+  'Big man': ['trb_pct', 'orb_pct', 'blk_pct', 'fg_pct', 'dbpm', 'def_rtg'],
+  'Two-way': ['obpm', 'dbpm', 'ts_pct', 'stl_pct', 'blk_pct', 'ws_per_48'],
+  'Shooter': ['fg3_pct', 'fg3a_per_poss', 'fg3a_per_fga_pct', 'ft_pct', 'efg_pct'],
+};
+const MAX = 10, MIN = 3;
+const P = PLAYERS.players, byId = Object.fromEntries(P.map(p => [p.id, p]));
+const GROUP = { PG: 'Guards', SG: 'Guards', SF: 'Forwards', PF: 'Forwards', C: 'Centers' };
+const label = p => `${p.name} · ${p.team}`;
+const byLabel = Object.fromEntries(P.map(p => [label(p), p.id]));
+const find = n => P.find(p => p.name === n)?.id;
+let state = { a: find('Shai Gilgeous-Alexander'), b: find('Nikola Jokić'), stats: [...PRESETS['Box score']], pool: 'all', minmp: 500 };
+const $ = id => document.getElementById(id);
+const tip = $('tip');
+const showTip = (e, h) => { tip.innerHTML = h; tip.hidden = false; tip.style.left = Math.min(e.clientX + 14, innerWidth - 270) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; };
+const hideTip = () => tip.hidden = true;
+
+function fmt(v, f) {
+  if (v == null) return '–';
+  if (f === 'pct') return v.toFixed(3).replace(/^0/, '');
+  if (f === 's1') return (v > 0 ? '+' : '') + v.toFixed(1);
+  return v.toFixed(typeof f === 'number' ? f : 0);
+}
+function pool(p) { return P.filter(q => q.s.mp >= state.minmp && (state.pool === 'all' || GROUP[q.pos] === GROUP[p.pos])); }
+function percentile(p, k, grp) {
+  const d = DEF[k], meets = q => q.s[k] != null && (!d.vol || q.s[d.vol[0]] >= d.vol[1]);
+  if (!meets(p)) return null;
+  const vals = grp.filter(meets).map(q => q.s[k]), v = p.s[k];
+  if (!vals.length) return null;
+  let below = 0, eq = 0; vals.forEach(x => { if (d.lower ? x > v : x < v) below++; else if (x === v) eq++; });
+  return Math.min(100, Math.round((below + eq / 2) / vals.length * 100));
+}
+function profile(id) {
+  const p = byId[id]; if (!p) return null;
+  const grp = pool(p);
+  const pcts = state.stats.map(k => percentile(p, k, grp));
+  const valid = pcts.filter(x => x != null);
+  return { p, grp, pcts, avg: valid.length ? Math.round(valid.reduce((a, b) => a + b, 0) / valid.length) : null };
+}
+
+// builder
+$('plist').innerHTML = P.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${label(p)}"></option>`).join('');
+function bindPlayer(inputId, key) {
+  const el = $(inputId), err = $(inputId + '-err');
+  el.value = state[key] ? label(byId[state[key]]) : '';
+  const commit = () => {
+    const v = el.value.trim();
+    if (!v && key === 'b') { state.b = null; err.hidden = true; render(); return; }
+    const id = byLabel[v] || P.find(p => p.name.toLowerCase() === v.toLowerCase())?.id;
+    if (id) { state[key] = id; el.value = label(byId[id]); err.hidden = true; render(); }
+    else if (v) { err.textContent = `No player called "${v}" with 100+ minutes. Pick a name from the list.`; err.hidden = false; }
+  };
+  el.addEventListener('change', commit);
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') commit(); });
+}
+bindPlayer('pa', 'a'); bindPlayer('pb', 'b');
+$('pb-clear').onclick = () => { $('pb').value = ''; state.b = null; $('pb-err').hidden = true; render(); };
+$('pool').onchange = e => { state.pool = e.target.value; render(); };
+$('minmp').onchange = e => { state.minmp = +e.target.value; render(); };
+Object.keys(PRESETS).forEach(n => { const b = document.createElement('button'); b.className = 'chip'; b.type = 'button'; b.id = 'pre-' + n.replace(/\W/g, ''); b.textContent = n; b.onclick = () => { state.stats = [...PRESETS[n]]; render(); }; $('presets').appendChild(b); });
+$('picker').innerHTML = STATS.map(([g, list]) => `<div class="group-name">${g}</div><div class="chips">${list.map(([k, l]) => `<button class="chip" type="button" id="st-${k}" data-k="${k}" title="${DEF[k].label}${DEF[k].lower ? ' (lower is better)' : ''}">${DEF[k].short}</button>`).join('')}</div>`).join('');
+$('picker').querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
+  const k = b.dataset.k, i = state.stats.indexOf(k);
+  if (i >= 0) { if (state.stats.length > MIN) state.stats.splice(i, 1); } else if (state.stats.length < MAX) state.stats.push(k);
+  render();
+});
+
+function renderControls() {
+  const n = state.stats.length;
+  $('count').textContent = `${n} of ${MAX}`;
+  $('picker').querySelectorAll('[data-k]').forEach(b => { const on = state.stats.includes(b.dataset.k); b.setAttribute('aria-pressed', on); b.disabled = (!on && n >= MAX) || (on && n <= MIN); });
+  Object.entries(PRESETS).forEach(([nm, ks]) => $('pre-' + nm.replace(/\W/g, '')).setAttribute('aria-pressed', ks.length === n && ks.every((k, i) => state.stats[i] === k)));
+  const a = byId[state.a];
+  $('pool-note').textContent = `${pool(a).length} ${state.pool === 'pos' ? GROUP[a.pos].toLowerCase() : 'players'} in the comparison group for ${a.name}.`;
+}
+
+function renderCards(profs) {
+  $('cards').innerHTML = profs.map(({ p, avg, grp }, i) => `<div class="card" style="--c:var(${i ? '--b' : '--accent'})">
+    <div class="nm">${p.name}</div>
+    <div class="meta">${p.teams.join(' → ')} · ${p.pos} · age ${p.age} · ${p.s.games} GP · ${p.s.mp_per_g} MPG</div>
+    <div class="score"><b>${avg ?? '–'}</b>average percentile across these ${state.stats.length} stats</div></div>`).join('');
+}
+
+function renderRadar(profs) {
+  const svg = $('radar'), cx = 320, cy = 280, R = 190, n = state.stats.length;
+  const ang = i => -Math.PI / 2 + i * 2 * Math.PI / n;
+  const pt = (i, r) => [cx + Math.cos(ang(i)) * r, cy + Math.sin(ang(i)) * r];
+  const poly = r => state.stats.map((_, i) => pt(i, r).join(',')).join(' ');
+  let h = '';
+  [25, 50, 75, 100].forEach(q => h += `<polygon points="${poly(R * q / 100)}" fill="${q === 100 ? 'var(--bg)' : 'none'}" stroke="var(--line)" stroke-width="${q === 50 ? 1.4 : 1}"${q === 50 ? ' stroke-dasharray="4 3"' : ''}/>`);
+  state.stats.forEach((_, i) => { const [x, y] = pt(i, R); h += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--line)"/>`; });
+  [25, 50, 75].forEach(q => h += `<text class="ring" x="${cx + 4}" y="${cy - R * q / 100 - 3}">${q}</text>`);
+  profs.slice().reverse().forEach(pr => {
+    const c = pr === profs[0] ? 'var(--accent)' : 'var(--b)';
+    const pts = pr.pcts.map((v, i) => pt(i, R * Math.max(v ?? 0, 2) / 100).join(',')).join(' ');
+    h += `<polygon points="${pts}" fill="${c}" fill-opacity=".2" stroke="${c}" stroke-width="2.5" stroke-linejoin="round"/>`;
+    pr.pcts.forEach((v, i) => { const [x, y] = pt(i, R * Math.max(v ?? 0, 2) / 100);
+      h += `<circle cx="${x}" cy="${y}" r="5" fill="${v == null ? 'var(--panel)' : c}" stroke="${c}" stroke-width="2" data-p="${pr.p.id}" data-i="${i}" style="cursor:default"/>`; });
+  });
+  state.stats.forEach((k, i) => {
+    const [x, y] = pt(i, R + 24), cos = Math.cos(ang(i)), anchor = Math.abs(cos) < .2 ? 'middle' : cos > 0 ? 'start' : 'end';
+    const dy = Math.sin(ang(i)) < -.5 ? -6 : Math.sin(ang(i)) > .5 ? 14 : 4;
+    const vals = profs.map(pr => pr.pcts[i] ?? 'n/a').join(' / ');
+    h += `<text x="${x}" y="${y + dy}" text-anchor="${anchor}">${DEF[k].short}</text><text class="val" x="${x}" y="${y + dy + 16}" text-anchor="${anchor}">${vals}</text>`;
+  });
+  svg.innerHTML = h;
+  svg.querySelectorAll('circle[data-p]').forEach(c => {
+    c.onmousemove = e => { const p = byId[c.dataset.p], k = state.stats[+c.dataset.i], pr = profs.find(x => x.p.id === p.id), v = pr.pcts[+c.dataset.i];
+      showTip(e, `<b>${p.name}</b><br>${DEF[k].label}: ${fmt(p.s[k], DEF[k].fmt)}<br>${v == null ? 'Not enough attempts to rank' : v + 'th percentile'}`); };
+    c.onmouseleave = hideTip;
+  });
+}
+
+function renderTable(profs) {
+  $('thead').innerHTML = `<tr><th>Stat</th>${profs.map(pr => `<th>${pr.p.name.split(' ').slice(-1)[0]}</th><th>Pctl</th>`).join('')}</tr>`;
+  $('tbody').innerHTML = state.stats.map((k, i) => `<tr><td>${DEF[k].label}${DEF[k].lower ? ' <small>(lower is better)</small>' : ''}</td>${profs.map((pr, j) => {
+    const v = pr.pcts[i], c = j ? 'var(--b)' : 'var(--accent)';
+    return `<td>${fmt(pr.p.s[k], DEF[k].fmt)}</td><td style="--c:${c}">${v ?? 'n/a'}<span class="pbar"><i style="width:${v ?? 0}%"></i></span></td>`; }).join('')}</tr>`).join('');
+}
+
+function render() {
+  const profs = [profile(state.a), state.b && state.b !== state.a ? profile(state.b) : null].filter(Boolean);
+  renderControls(); renderCards(profs); renderRadar(profs); renderTable(profs);
+}
+render();
+})();
+</script>
