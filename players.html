@@ -77,6 +77,19 @@ td:first-child { font-family: var(--body); font-weight: 600; }
 td small { color: var(--muted); font-weight: 400; }
 .pbar { display: inline-block; width: 70px; height: 8px; background: var(--grid); border-radius: 2px; vertical-align: middle; margin-left: 8px; position: relative; overflow: hidden; }
 .pbar i { position: absolute; inset: 0 auto 0 0; background: var(--c); }
+.sim-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) 92px 86px; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--grid); }
+.sim-row:last-child { border-bottom: 0; }
+.sim-row .n { font: 700 18px var(--display); color: var(--muted); }
+.sim-row .who { min-width: 0; }
+.sim-row .who b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sim-row .who small { display: block; font: 12px var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sim-row .who small + small { white-space: normal; }
+.sim-row .m { font: 700 20px var(--display); text-align: right; }
+.sim-row .m small { display: block; font: 10.5px var(--mono); color: var(--muted); font-weight: 400; text-transform: uppercase; letter-spacing: .05em; }
+.sim-row.on { background: var(--b-soft); }
+.cmp { font: 600 12.5px var(--body); border: 1px solid var(--b); color: var(--b); background: var(--panel); border-radius: 4px; padding: 5px 0; cursor: pointer; }
+.cmp:hover, .sim-row.on .cmp { background: var(--b); color: #fff; }
+@media (max-width: 480px) { .sim-row { grid-template-columns: 18px minmax(0, 1fr) 48px 84px; gap: 8px; } }
 .method { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
 .method h3 { font: 700 18px var(--display); text-transform: uppercase; margin: 0 0 6px; letter-spacing: .02em; }
 .method p { color: var(--muted); font-size: 14px; margin: 0 0 8px; max-width: 65ch; }
@@ -132,6 +145,11 @@ code { font-family: var(--mono); font-size: 12.5px; background: var(--bg); paddi
     <div style="display:grid;gap:20px;min-width:0">
       <div class="cards" id="cards"></div>
       <div class="panel radar-wrap"><svg class="radar" id="radar" viewBox="0 0 640 560" role="img" aria-label="Radar chart of player percentiles"></svg></div>
+      <div class="panel">
+        <h2 id="sim-title">Most similar players</h2>
+        <p class="hint" style="margin:4px 0 12px">Players in the comparison group whose percentiles are closest to <span id="sim-name"></span>'s on the stats you picked. Choose <b>Compare</b> to overlay one on the chart.</p>
+        <div id="sim"></div>
+      </div>
       <div class="panel table-wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
     </div>
   </div>
@@ -142,6 +160,7 @@ code { font-family: var(--mono); font-size: 12.5px; background: var(--bg); paddi
       <div><h3>Percentiles</h3><p>A percentile is the share of the comparison group a player beats on that stat: 90 means better than 90% of them, and ties count as half. For stats where lower is better (turnovers, defensive rating) the scale is flipped, so the outside edge always means good.</p></div>
       <div><h3>Comparison group</h3><p>Players at or above the minutes cutoff, either league-wide or within the same position group: guards (PG, SG), forwards (SF, PF) or centers (C). A player below the cutoff can still be profiled against the group.</p></div>
       <div><h3>Volume cutoffs</h3><p>Shooting percentages need enough attempts to mean something: 3P% needs 82 attempts (one per game) and FT% needs 50. Players below the cutoff show <code>n/a</code> and sit at the center for that stat.</p></div>
+      <div><h3>Similar players</h3><p>Every player in the comparison group gets percentiles on the same stats. The match score is <code>100 − average |percentile gap|</code>, so 90 means the two players are 10 percentile points apart per stat on average. Because it uses only the stats you picked, changing them changes who counts as similar.</p></div>
       <div><h3>Per game vs. per 100</h3><p>Per-game numbers reward playing time. Per-100-possession and percentage stats (AST%, TRB%, BLK%) measure production rate, which is fairer to bench players and slow-paced teams. Data comes from Basketball-Reference, with season totals used for traded players.</p></div>
     </div>
   </section>
@@ -300,9 +319,36 @@ function renderTable(profs) {
     return `<td>${fmt(pr.p.s[k], DEF[k].fmt)}</td><td style="--c:${c}">${v ?? 'n/a'}<span class="pbar"><i style="width:${v ?? 0}%"></i></span></td>`; }).join('')}</tr>`).join('');
 }
 
+// Similarity = 100 minus the average percentile gap across the selected stats, all measured against the
+// same reference group. Stats where either player is n/a are skipped; at least 3 shared stats are required.
+function similar(a, n = 8) {
+  const grp = a.grp, ks = state.stats;
+  return grp.filter(q => q.id !== a.p.id).map(q => {
+    const pq = ks.map(k => percentile(q, k, grp)), gaps = [];
+    ks.forEach((k, i) => { if (a.pcts[i] != null && pq[i] != null) gaps.push([k, pq[i] - a.pcts[i]]); });
+    if (gaps.length < Math.min(3, ks.length)) return null;
+    const avg = gaps.reduce((s, [, g]) => s + Math.abs(g), 0) / gaps.length;
+    const worst = gaps.reduce((w, g) => Math.abs(g[1]) > Math.abs(w[1]) ? g : w);
+    return { q, match: Math.round(100 - avg), worst };
+  }).filter(Boolean).sort((x, y) => y.match - x.match).slice(0, n);
+}
+
+function renderSimilar(a) {
+  $('sim-name').textContent = a.p.name;
+  const list = similar(a);
+  $('sim').innerHTML = list.length ? list.map(({ q, match, worst }, i) => {
+    const [k, g] = worst;
+    return `<div class="sim-row ${q.id === state.b ? 'on' : ''}"><span class="n">${i + 1}</span>
+      <div class="who"><b>${q.name}</b><small>${q.team} · ${q.pos}</small><small>Biggest gap: ${DEF[k].short} ${g > 0 ? '+' : ''}${g}</small></div>
+      <div class="m">${match}<small>match</small></div>
+      <button class="cmp" type="button" data-id="${q.id}">${q.id === state.b ? 'Comparing' : 'Compare'}</button></div>`;
+  }).join('') : '<p class="hint">Not enough ranked stats to compare. Add a few more stats.</p>';
+  $('sim').querySelectorAll('.cmp').forEach(b => b.onclick = () => { state.b = b.dataset.id; $('pb').value = label(byId[state.b]); $('pb-err').hidden = true; render(); });
+}
+
 function render() {
   const profs = [profile(state.a), state.b && state.b !== state.a ? profile(state.b) : null].filter(Boolean);
-  renderControls(); renderCards(profs); renderRadar(profs); renderTable(profs);
+  renderControls(); renderCards(profs); renderRadar(profs); renderSimilar(profs[0]); renderTable(profs);
 }
 render();
 })();

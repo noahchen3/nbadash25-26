@@ -20,6 +20,7 @@ Click any team to highlight it in every chart.
 - **Radar chart builder.** Pick a player and 3 to 10 stats from 35 options (scoring, shooting, playmaking, rebounding, defense, impact). Each stat is one corner, placed by the player's percentile, so a point further out means better.
 - **Compare two players** by overlaying their shapes, with a stat table showing raw values and percentiles side by side.
 - **Comparison group.** Rank against all players or only the same position group (guards, forwards, centers), with a minimum-minutes cutoff.
+- **Most similar players.** Ranks the comparison group by `100 − average percentile gap` on the stats you picked, shows each player's biggest gap, and adds any of them to the chart with one click.
 - **Templates** for common archetypes: box score, scorer, playmaker, big man, two-way, shooter.
 - Stats where lower is better (turnovers, defensive rating) are flipped. Shooting percentages need enough attempts to be ranked (82 threes, 50 free throws).
 
