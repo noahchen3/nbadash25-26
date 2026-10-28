@@ -1,5 +1,7 @@
 # NBA Power Board 2025–26
 
+**Live dashboard: https://noahchen3.github.io/nbadash25-26/**
+
 An example interactive dashboard from the SBIN analytics branch at Northeastern. It asks **who is actually good**, as opposed to who has won the most games, using every regular-season game of the 2025–26 NBA season.
 
 **Subteams: start with [GUIDE.md](GUIDE.md).** It's the open-ended brief for your own projects. This dashboard is just one example.
@@ -15,7 +17,7 @@ Click any team to highlight it in every chart.
 
 ## View it
 
-Open `index.html` in a browser. It has no build step or server, and the data is built into the page. Turn on GitHub Pages (Settings → Pages → deploy from `main`) to give it a public URL.
+Use the [live link](https://noahchen3.github.io/nbadash25-26/), or open `index.html` locally in a browser. It has no build step or server, and the data is built into the page. GitHub Pages redeploys the site automatically whenever `main` changes.
 
 ## Rebuild the data
 
